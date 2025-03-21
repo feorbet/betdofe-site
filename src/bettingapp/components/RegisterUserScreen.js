@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { db } from '../firebase/firebase';
+import { db, auth } from '../firebase/firebase';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
-import { auth } from '../firebase/firebase';
+import DatePicker from 'react-datepicker';
 
 const Container = styled.div`
   padding: 20px;
@@ -41,9 +42,16 @@ const Select = styled.select`
   padding: 10px;
   font-size: 1rem;
   color: white;
-  background: none;
+  background-color: #2c2c2c;
   border: none;
   outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  option {
+    background-color: #2c2c2c;
+    color: white;
+  }
 `;
 
 const ErrorContainer = styled.div`
@@ -78,8 +86,31 @@ const ButtonText = styled.span`
   font-weight: bold;
 `;
 
+const BackButton = styled.button`
+  background-color: #6c757d;
+  border-radius: 12px;
+  padding: 10px;
+  margin: 40px 0 20px 0;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+`;
+
+const StyledDatePicker = styled(DatePicker)`
+  flex: 1;
+  padding: 10px;
+  font-size: 1rem;
+  color: white;
+  background-color: #2c2c2c;
+  border: none;
+  border-radius: 12px;
+  outline: none;
+`;
+
 const RegisterUserScreen = () => {
-  const [userDate, setUserDate] = useState('');
+  const navigate = useNavigate();
+  const [userDate, setUserDate] = useState(null);
   const [userDateError, setUserDateError] = useState('');
   const [userAccountName, setUserAccountName] = useState('');
   const [userAccountNameError, setUserAccountNameError] = useState('');
@@ -101,6 +132,7 @@ const RegisterUserScreen = () => {
   const [userStatus, setUserStatus] = useState('Ativa');
   const [error, setError] = useState('');
   const [betHouses, setBetHouses] = useState(['']);
+  const [existingUserData, setExistingUserData] = useState([]); // Dados do usuário logado
 
   useEffect(() => {
     const fetchBetHouses = async () => {
@@ -113,32 +145,65 @@ const RegisterUserScreen = () => {
         console.error('Erro ao carregar casas de aposta:', err);
       }
     };
+
+    const fetchExistingUserData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const usersCollection = collection(db, 'users');
+          const usersSnapshot = await getDocs(usersCollection);
+          const userDataList = usersSnapshot.docs
+            .map(doc => doc.data())
+            .filter(data => data.uid === user.uid); // Filtra apenas os dados do usuário logado
+          setExistingUserData(userDataList);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dados do usuário:', err);
+      }
+    };
+
     fetchBetHouses();
+    fetchExistingUserData();
   }, []);
 
   const validateFields = () => {
     let hasError = false;
 
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     const pixRegex = /^(?:\d{11}|\w+@\w+\.\w{2,3}|\d{8}-\d{1})$/;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+
+    // Validação de duplicatas apenas para o usuário logado
+    const accountNameExists = existingUserData.some(data => data.userAccountName === userAccountName);
+    const usernameExists = existingUserData.some(data => data.username === username);
+    const pixExists = existingUserData.some(data => data.userPix === userPix);
+
+    if (accountNameExists) {
+      setUserAccountNameError('Este nome da conta já está em uso por você.');
+      hasError = true;
+    } else {
+      setUserAccountNameError('');
+    }
+
+    if (usernameExists) {
+      setUsernameError('Este usuário já está em uso por você.');
+      hasError = true;
+    } else {
+      setUsernameError('');
+    }
+
+    if (pixExists) {
+      setUserPixError('Esta chave Pix já está em uso por você.');
+      hasError = true;
+    } else {
+      setUserPixError('');
+    }
 
     if (!userDate) {
       setUserDateError('Por favor, selecione a data da conta.');
       hasError = true;
-    } else if (!dateRegex.test(userDate)) {
-      setUserDateError('A data da conta deve estar no formato aaaa-mm-dd.');
-      hasError = true;
     } else {
-      const [year, month, day] = userDate.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      if (
-        date.getDate() !== day ||
-        date.getMonth() + 1 !== month ||
-        date.getFullYear() !== year ||
-        year < 1900 ||
-        year > new Date().getFullYear()
-      ) {
+      const year = userDate.getFullYear();
+      if (year < 1900 || year > new Date().getFullYear()) {
         setUserDateError('Por favor, insira uma data válida.');
         hasError = true;
       } else {
@@ -149,8 +214,6 @@ const RegisterUserScreen = () => {
     if (!userAccountName) {
       setUserAccountNameError('Por favor, preencha o nome da conta.');
       hasError = true;
-    } else {
-      setUserAccountNameError('');
     }
 
     if (!userBetHouse && !newUserBetHouse) {
@@ -184,8 +247,6 @@ const RegisterUserScreen = () => {
     if (!username) {
       setUsernameError('Por favor, preencha o usuário.');
       hasError = true;
-    } else {
-      setUsernameError('');
     }
 
     if (!passwordRegex.test(userPassword)) {
@@ -198,8 +259,6 @@ const RegisterUserScreen = () => {
     if (!pixRegex.test(userPix)) {
       setUserPixError('A chave Pix deve ser um CPF (11 dígitos), e-mail válido ou chave aleatória (formato 8 dígitos-1 dígito).');
       hasError = true;
-    } else {
-      setUserPixError('');
     }
 
     return hasError ? 'Por favor, corrija os erros acima.' : null;
@@ -221,7 +280,7 @@ const RegisterUserScreen = () => {
       }
 
       await addDoc(collection(db, 'users'), {
-        userDate,
+        userDate: userDate.toISOString().split('T')[0],
         userAccountName,
         userBetHouse: betHouse,
         userGender,
@@ -231,6 +290,7 @@ const RegisterUserScreen = () => {
         userPix,
         userStatus,
         uid: user.uid,
+        email: user.email,
         createdAt: new Date(),
       });
 
@@ -239,7 +299,7 @@ const RegisterUserScreen = () => {
         setBetHouses([...betHouses, newUserBetHouse]);
       }
 
-      setUserDate('');
+      setUserDate(null);
       setUserAccountName('');
       setUserBetHouse('');
       setNewUserBetHouse('');
@@ -261,7 +321,7 @@ const RegisterUserScreen = () => {
 
   return (
     <Container>
-      <Title>Cadastro de Usuários</Title>
+      <Title>Cadastro de Contas</Title>
       {error && (
         <ErrorContainer>
           <ErrorText>{error}</ErrorText>
@@ -269,10 +329,12 @@ const RegisterUserScreen = () => {
       )}
 
       <InputContainer>
-        <Input
-          type="date"
-          value={userDate}
-          onChange={(e) => setUserDate(e.target.value)}
+        <StyledDatePicker
+          selected={userDate}
+          onChange={(date) => setUserDate(date)}
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Selecione a Data da Conta"
+          onKeyDown={(e) => e.preventDefault()}
         />
       </InputContainer>
       {userDateError && <ErrorText>{userDateError}</ErrorText>}
@@ -379,6 +441,10 @@ const RegisterUserScreen = () => {
       <Button onClick={addUser}>
         <ButtonText>Cadastrar</ButtonText>
       </Button>
+
+      <BackButton onClick={() => navigate('/app')}>
+        <ButtonText>Voltar</ButtonText>
+      </BackButton>
     </Container>
   );
 };

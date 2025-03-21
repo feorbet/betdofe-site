@@ -38,7 +38,16 @@ const UserScreen = () => {
     <Container>
       <Title>Bem-vindo ao Betdofe!</Title>
       <Button onClick={() => navigate('/app/register')}>
-        Cadastrar Usuário
+        Cadastro de Conta
+      </Button>
+      <Button onClick={() => navigate('/app/nova-transacao')}>
+        Nova Transação
+      </Button>
+      <Button onClick={() => navigate('/app/resumo-mensal')}>
+        Resumo Mensal
+      </Button>
+      <Button onClick={() => navigate('/app/transacoes')}>
+        Transações
       </Button>
       <Button onClick={() => auth.signOut()}>Sair</Button>
     </Container>
