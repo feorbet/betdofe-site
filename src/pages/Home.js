@@ -36,11 +36,12 @@ const Container = styled.div`
   margin: 0; /* Remove margens para evitar bordas brancas */
   width: 100vw; /* Garante que ocupe toda a largura da tela */
   overflow-x: hidden; /* Evita barras de rolagem horizontais */
+  position: relative; /* Necessário para posicionamento absoluto do LoginContainer */
 `;
 
 const Header = styled.header`
-  width: 1680px; /* Largura 1680px */
-  height: 200px; /* Altura 200px */
+  width: 100%; /* Largura total */
+  height: 200px; /* Altura padrão para desktop */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -50,30 +51,92 @@ const Header = styled.header`
   padding: 0; /* Remove padding */
   border: none; /* Remove qualquer borda */
   outline: none; /* Remove contorno */
+
+  /* Responsividade */
+  @media (max-width: 768px) { /* Tablet */
+    height: 150px; /* Reduz a altura */
+  }
+
+  @media (max-width: 480px) { /* Mobile */
+    height: 120px; /* Reduz ainda mais a altura */
+  }
 `;
 
 const Logo = styled.img`
-  width: 640px; /* Largura 640px */
-  height: 312px; /* Altura 312px */
+  width: 640px; /* Largura padrão para desktop */
+  height: 312px; /* Altura padrão para desktop */
+  max-width: 100%; /* Garante que não ultrapasse a largura da tela */
+  object-fit: contain; /* Mantém a proporção */
+
+  /* Responsividade */
+  @media (max-width: 768px) { /* Tablet */
+    width: 400px; /* Reduz a largura */
+    height: 195px; /* Reduz a altura proporcionalmente */
+  }
+
+  @media (max-width: 480px) { /* Mobile */
+    width: 300px; /* Reduz ainda mais a largura */
+    height: 146px; /* Reduz ainda mais a altura proporcionalmente */
+  }
+`;
+
+const MiddleSection = styled.div`
+  width: 100%; /* Largura total */
+  height: 300px; /* Altura padrão para desktop */
+  background-color: #005440; /* Mesma cor do cabeçalho */
+  margin: 50px 0 0 0; /* Margem superior para centralizar */
+  padding: 0; /* Remove padding */
+  border: none; /* Remove qualquer borda */
+  outline: none; /* Remove contorno */
+  display: flex; /* Para centralizar o LoginContainer */
+  align-items: center; /* Centraliza verticalmente */
+  justify-content: center; /* Centraliza horizontalmente */
+
+  /* Responsividade */
+  @media (max-width: 768px) { /* Tablet */
+    height: 250px; /* Reduz a altura */
+    margin: 30px 0 0 0; /* Reduz a margem superior */
+  }
+
+  @media (max-width: 480px) { /* Mobile */
+    height: 200px; /* Reduz ainda mais a altura */
+    margin: 20px 0 0 0; /* Reduz ainda mais a margem superior */
+  }
 `;
 
 const LoginContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 50px;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    transform: scale(0.9); /* Reduz o tamanho do formulário em telas menores */
+  }
 `;
 
 const Icon = styled.img`
   width: 80px;
   height: 80px;
   margin-bottom: 20px;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+  }
 `;
 
 const InputContainer = styled.div`
   position: relative;
   width: 300px;
   margin: 10px 0;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    width: 250px; /* Reduz a largura em telas menores */
+  }
 `;
 
 const InputIcon = styled.img`
@@ -83,6 +146,13 @@ const InputIcon = styled.img`
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    width: 16px;
+    height: 16px;
+    left: 8px;
+  }
 `;
 
 const Input = styled.input`
@@ -95,6 +165,12 @@ const Input = styled.input`
   font-size: 14px;
   &::placeholder {
     color: #CCCCCC;
+  }
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    padding: 8px 8px 8px 32px; /* Ajusta o padding */
+    font-size: 12px;
   }
 `;
 
@@ -109,12 +185,25 @@ const Button = styled.button`
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    width: 80px;
+    padding: 8px;
+    margin-top: 15px;
+    font-size: 12px;
+  }
 `;
 
 const Error = styled.p`
   color: red;
   font-size: 12px;
   margin: 5px 0;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    font-size: 10px;
+  }
 `;
 
 const Footer = styled.footer`
@@ -122,20 +211,52 @@ const Footer = styled.footer`
   padding: 10px 0;
   display: flex;
   justify-content: flex-end;
-  background-color: #13281E;
   position: fixed;
   bottom: 0;
+`;
+
+const FooterBackground = styled.div`
+  width: 100%;
+  height: 60px; /* Altura menor para desktop */
+  background-color: #005440; /* Mesma cor do cabeçalho e MiddleSection */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0; /* Coloca a faixa atrás dos ícones */
+
+  /* Responsividade */
+  @media (max-width: 768px) { /* Tablet */
+    height: 50px; /* Reduz a altura */
+  }
+
+  @media (max-width: 480px) { /* Mobile */
+    height: 40px; /* Reduz ainda mais a altura */
+  }
 `;
 
 const SocialIcons = styled.div`
   display: flex;
   gap: 20px;
   margin-right: 20px;
+  position: relative; /* Garante que os ícones fiquem acima da faixa verde */
+  z-index: 1; /* Coloca os ícones acima da faixa verde */
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    gap: 15px;
+    margin-right: 15px;
+  }
 `;
 
 const SocialIcon = styled.img`
   width: 30px;
   height: 30px;
+
+  /* Responsividade */
+  @media (max-width: 480px) {
+    width: 24px;
+    height: 24px;
+  }
 `;
 
 const Home = () => {
@@ -194,38 +315,41 @@ const Home = () => {
         <Header>
           <Logo src={LogoSVG} alt="Bet do Fe Logo" />
         </Header>
-        {user ? (
-          <Link to="/app">
-            <Button>Acessar o BettingApp</Button>
-          </Link>
-        ) : (
-          <LoginContainer>
-            <Icon src={UserIcon} alt="User Icon" />
-            <InputContainer>
-              <InputIcon src={EmailIcon} alt="Email Icon" />
-              <Input
-                type="email"
-                placeholder="Digite seu e-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </InputContainer>
-            {emailError && <Error>{emailError}</Error>}
-            <InputContainer>
-              <InputIcon src={LockIcon} alt="Lock Icon" />
-              <Input
-                type="password"
-                placeholder="Digite sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </InputContainer>
-            {passwordError && <Error>{passwordError}</Error>}
-            {error && <Error>{error}</Error>}
-            <Button onClick={handleLogin}>Entrar</Button>
-          </LoginContainer>
-        )}
+        <MiddleSection>
+          {user ? (
+            <Link to="/app">
+              <Button>Acessar o BettingApp</Button>
+            </Link>
+          ) : (
+            <LoginContainer>
+              <Icon src={UserIcon} alt="User Icon" />
+              <InputContainer>
+                <InputIcon src={EmailIcon} alt="Email Icon" />
+                <Input
+                  type="email"
+                  placeholder="Digite seu e-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </InputContainer>
+              {emailError && <Error>{emailError}</Error>}
+              <InputContainer>
+                <InputIcon src={LockIcon} alt="Lock Icon" />
+                <Input
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </InputContainer>
+              {passwordError && <Error>{passwordError}</Error>}
+              {error && <Error>{error}</Error>}
+              <Button onClick={handleLogin}>Entrar</Button>
+            </LoginContainer>
+          )}
+        </MiddleSection>
         <Footer>
+          <FooterBackground />
           <SocialIcons>
             <a href="https://youtube.com" target="_blank" rel="noopener noreferrer">
               <SocialIcon src={YouTubeIcon} alt="YouTube" />
