@@ -175,7 +175,7 @@ const Input = styled.input`
 `;
 
 const Button = styled.button`
-  width: 100px;
+  width: 200px; /* Aumenta a largura para evitar quebra de texto */
   padding: 10px;
   margin-top: 20px;
   background-color: #000000;
@@ -185,13 +185,20 @@ const Button = styled.button`
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
+  white-space: nowrap; /* Evita quebra de texto */
 
   /* Responsividade */
-  @media (max-width: 480px) {
-    width: 80px;
+  @media (max-width: 768px) {
+    width: 180px; /* Reduz a largura para tablet */
     padding: 8px;
-    margin-top: 15px;
     font-size: 12px;
+  }
+
+  @media (max-width: 480px) {
+    width: 150px; /* Reduz ainda mais a largura para mobile */
+    padding: 6px;
+    margin-top: 15px;
+    font-size: 10px;
   }
 `;
 
@@ -208,11 +215,14 @@ const Error = styled.p`
 
 const Footer = styled.footer`
   width: 100%;
-  padding: 10px 0;
+  height: 60px; /* Altura fixa para o rodapé */
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  background-color: transparent; /* Fundo transparente para mostrar a faixa verde */
   position: fixed;
   bottom: 0;
+  z-index: 1; /* Garante que o rodapé fique acima de outros elementos */
 `;
 
 const FooterBackground = styled.div`
@@ -339,7 +349,7 @@ const Home = () => {
                   type="password"
                   placeholder="Digite sua senha"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)} // Corrigido para setPassword
                 />
               </InputContainer>
               {passwordError && <Error>{passwordError}</Error>}
