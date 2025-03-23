@@ -2,374 +2,541 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { db, auth } from '../firebase/firebase';
-import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
-import DatePicker from 'react-datepicker';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 
-const Container = styled.div`
-  padding: 20px;
-  background-color: #1a1a1a;
-  min-height: 100vh;
-  color: white;
-`;
+// Importe os arquivos de imagem
+import LogoSVG from '../../assets/logo.svg';
+import YouTubeIcon from '../../assets/youtube-icon.png';
+import DiscordIcon from '../../assets/discord-icon.png';
+import InstagramIcon from '../../assets/instagram-icon.png';
+import FacebookIcon from '../../assets/facebook-icon.png';
+import TelegramIcon from '../../assets/telegram-icon.png';
 
-const Title = styled.h1`
-  font-size: 2rem;
-  text-align: center;
-  margin-bottom: 20px;
-`;
+// Estilos (semelhantes ao Transacoes.js)
+const GlobalStyle = styled.div`
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+  }
 
-const InputContainer = styled.div`
-  display: flex;
-  align-items: center;
-  background-color: #2c2c2c;
-  border-radius: 12px;
-  margin: 10px 0;
-  padding: 10px;
-`;
+  .MuiPickersPopper-root {
+    z-index: 9999 !important;
+  }
 
-const Input = styled.input`
-  flex: 1;
-  padding: 10px;
-  font-size: 1rem;
-  color: white;
-  background: none;
-  border: none;
-  outline: none;
-`;
+  .MuiDateCalendar-root {
+    background-color: #333333;
+    border-radius: 5px;
+    color: #CCCCCC;
+  }
 
-const Select = styled.select`
-  flex: 1;
-  padding: 10px;
-  font-size: 1rem;
-  color: white;
-  background-color: #2c2c2c;
-  border: none;
-  outline: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  option {
-    background-color: #2c2c2c;
-    color: white;
+  .MuiPickersCalendarHeader-root {
+    background-color: #005440;
+    color: #CCCCCC;
+  }
+
+  .MuiPickersCalendarHeader-label {
+    color: #CCCCCC;
+  }
+
+  .MuiDayCalendar-weekDayLabel {
+    color: #CCCCCC;
+  }
+
+  .MuiPickersDay-root {
+    color: #CCCCCC;
+  }
+
+  .MuiPickersDay-root:hover {
+    background-color: #555555;
+    cursor: pointer;
+  }
+
+  .MuiPickersDay-root.Mui-selected {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
   }
 `;
 
-const ErrorText = styled.p`
-  color: #ff4d4f;
-  font-size: 1rem;
-  margin: 5px 0;
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #13281E;
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+`;
+
+const Header = styled.header`
+  width: 100%;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #005440;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  z-index: 1;
+
+  @media (max-width: 768px) {
+    height: 150px;
+  }
+
+  @media (max-width: 480px) {
+    height: 120px;
+  }
+`;
+
+const Logo = styled.img`
+  width: 640px;
+  height: 312px;
+  max-width: 100%;
+  object-fit: contain;
+
+  @media (max-width: 768px) {
+    width: 400px;
+    height: 195px;
+  }
+
+  @media (max-width: 480px) {
+    width: 300px;
+    height: 146px;
+  }
+`;
+
+const MiddleSection = styled.div`
+  width: 100%;
+  background-color: #005440;
+  margin: 20px 0 0 0;
+  padding: 20px;
+  border: none;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 400px;
+  z-index: 1;
+
+  @media (max-width: 768px) {
+    margin: 15px 0 0 0;
+    padding: 15px;
+    min-height: 350px;
+  }
+
+  @media (max-width: 480px) {
+    margin: 10px 0 0 0;
+    padding: 10px;
+    min-height: 450px;
+  }
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 10px;
+`;
+
+const FormRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 10px;
+  }
+`;
+
+const FormField = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
+const Label = styled.label`
+  color: #CCCCCC;
+  font-size: 14px;
+  margin-bottom: 5px;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 8px;
+  background-color: #333333;
+  color: #CCCCCC;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    padding: 6px;
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 8px;
+  background-color: #333333;
+  color: #CCCCCC;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    padding: 6px;
+  }
+`;
+
+const ButtonRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 20px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 10px;
+  }
 `;
 
 const Button = styled.button`
-  background-color: #007AFF;
-  border-radius: 12px;
+  flex: 1;
   padding: 10px;
-  margin: 20px 0;
-  align-items: center;
-  text-align: center;
-  cursor: pointer;
-  border: none;
-`;
-
-const ButtonText = styled.span`
-  color: white;
-  font-size: 1rem;
-  font-weight: bold;
-`;
-
-const BackButton = styled.button`
-  background-color: #6c757d;
-  border-radius: 12px;
-  padding: 10px;
-  margin: 40px 0 20px 0;
-  align-items: center;
-  text-align: center;
-  cursor: pointer;
-  border: none;
-`;
-
-const ConfirmationModal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const ModalContent = styled.div`
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-`;
-
-const ModalMessage = styled.p`
-  color: black;
-  margin-bottom: 20px;
-`;
-
-const ModalButton = styled.button`
-  padding: 10px 20px;
-  margin: 10px;
+  background-color: #000000;
+  color: #FFFFFF;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  font-size: 14px;
   font-weight: bold;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    padding: 8px;
+    font-size: 12px;
+  }
 `;
 
-const SimButton = styled(ModalButton)`
-  background-color: #28a745;
-  color: white;
+const Error = styled.p`
+  color: red;
+  font-size: 12px;
+  margin: 5px 0;
+  text-align: center;
+
+  @media (max-width: 480px) {
+    font-size: 10px;
+  }
 `;
 
-const NaoButton = styled(ModalButton)`
-  background-color: #dc3545;
-  color: white;
+const Footer = styled.footer`
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background-color: transparent;
+  position: fixed;
+  bottom: 0;
+  z-index: 1;
 `;
 
-const StyledDatePicker = styled(DatePicker)`
-  flex: 1;
-  padding: 10px;
-  font-size: 1rem;
-  color: white;
-  background-color: #2c2c2c;
-  border: none;
-  border-radius: 12px;
-  outline: none;
+const FooterBackground = styled.div`
+  width: 100%;
+  height: 60px;
+  background-color: #005440;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+
+  @media (max-width: 768px) {
+    height: 50px;
+  }
+
+  @media (max-width: 480px) {
+    height: 40px;
+  }
+`;
+
+const SocialIcons = styled.div`
+  display: flex;
+  gap: 20px;
+  margin-right: 20px;
+  position: relative;
+  z-index: 1;
+
+  @media (max-width: 480px) {
+    gap: 15px;
+    margin-right: 15px;
+  }
+`;
+
+const SocialIcon = styled.img`
+  width: 30px;
+  height: 30px;
+
+  @media (max-width: 480px) {
+    width: 24px;
+    height: 24px;
+  }
 `;
 
 const NovaTransacao = () => {
   const navigate = useNavigate();
-  const [nomeConta, setNomeConta] = useState('');
-  const [casaAposta, setCasaAposta] = useState('');
-  const [novaCasaAposta, setNovaCasaAposta] = useState('');
-  const [showNovaCasaAposta, setShowNovaCasaAposta] = useState(false);
-  const [valorInvestido, setValorInvestido] = useState('');
-  const [valorGanho, setValorGanho] = useState('');
-  const [tipo, setTipo] = useState('Positivo');
-  const [data, setData] = useState(new Date());
-  const [contasAtivas, setContasAtivas] = useState([]);
-  const [casasAposta, setCasasAposta] = useState([]);
-  const [error, setError] = useState('');
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [selectedContaId, setSelectedContaId] = useState(null);
+  const currentDate = dayjs('2025-03-23'); // Data atual fornecida
+  const minDate = currentDate.subtract(12, 'month'); // 12 meses atrás: 23/03/2024
+  const maxDate = currentDate; // Data máxima: 23/03/2025
 
+  const [transactionDate, setTransactionDate] = useState(dayjs('2025-03-23'));
+  const [accountId, setAccountId] = useState('');
+  const [betHouse, setBetHouse] = useState('');
+  const [investedAmount, setInvestedAmount] = useState('');
+  const [earnedAmount, setEarnedAmount] = useState('');
+  const [status, setStatus] = useState('Pendente');
+  const [accounts, setAccounts] = useState([]);
+  const [error, setError] = useState('');
+
+  // Carregar as contas do usuário
   useEffect(() => {
-    const fetchContasAtivas = async () => {
+    const fetchAccounts = async () => {
       try {
         const user = auth.currentUser;
-        if (user) {
-          const usersCollection = collection(db, 'users');
-          const usersSnapshot = await getDocs(usersCollection);
-          const usersList = usersSnapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(userData => userData.uid === user.uid && userData.userStatus === 'Ativa'); // Filtra apenas contas do usuário logado
-          setContasAtivas(usersList);
+        if (!user) {
+          setError('Usuário não autenticado.');
+          return;
+        }
+
+        const q = query(collection(db, 'accounts'), where('uid', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        const userAccounts = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setAccounts(userAccounts);
+        if (userAccounts.length > 0) {
+          setAccountId(userAccounts[0].id); // Selecionar a primeira conta por padrão
+          setBetHouse(userAccounts[0].betHouse); // Preencher a casa de aposta com base na conta
         }
       } catch (err) {
-        console.error('Erro ao carregar contas ativas:', err);
+        setError('Erro ao carregar contas: ' + err.message);
       }
     };
 
-    const fetchCasasAposta = async () => {
-      try {
-        const betHousesCollection = collection(db, 'betHouses');
-        const betHousesSnapshot = await getDocs(betHousesCollection);
-        const betHousesList = betHousesSnapshot.docs.map(doc => doc.data().name);
-        setCasasAposta(betHousesList.length ? betHousesList : ['']);
-      } catch (err) {
-        console.error('Erro ao carregar casas de aposta:', err);
-      }
-    };
-
-    fetchContasAtivas();
-    fetchCasasAposta();
+    fetchAccounts();
   }, []);
 
-  const handleNomeContaChange = (e) => {
-    const selectedConta = contasAtivas.find(conta => conta.userAccountName === e.target.value);
-    setNomeConta(e.target.value);
-    if (selectedConta) {
-      setCasaAposta(selectedConta.userBetHouse);
-      setSelectedContaId(selectedConta.id);
-    } else {
-      setCasaAposta('');
-      setSelectedContaId(null);
+  const handleAccountChange = (e) => {
+    const selectedAccountId = e.target.value;
+    setAccountId(selectedAccountId);
+    const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
+    if (selectedAccount) {
+      setBetHouse(selectedAccount.betHouse);
     }
   };
 
-  const validateFields = () => {
-    if (!nomeConta) {
-      setError('Por favor, selecione uma conta.');
-      return false;
-    }
-    if (!casaAposta && !novaCasaAposta) {
-      setError('Por favor, selecione ou adicione uma casa de aposta.');
-      return false;
-    }
-    if (!valorInvestido || valorInvestido <= 0) {
-      setError('Por favor, insira um valor investido válido.');
-      return false;
-    }
-    if (!valorGanho || valorGanho < 0) {
-      setError('Por favor, insira um valor ganho válido.');
-      return false;
-    }
-    if (!data) {
-      setError('Por favor, selecione uma data.');
-      return false;
-    }
-    setError('');
-    return true;
-  };
-
-  const handleSubmit = () => {
-    if (validateFields()) {
-      setShowConfirmation(true);
-    }
-  };
-
-  const handleConfirmation = async (isActive) => {
-    setShowConfirmation(false);
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      const betHouse = novaCasaAposta || casaAposta;
+      const user = auth.currentUser;
+      if (!user) {
+        setError('Usuário não autenticado.');
+        return;
+      }
 
-      await addDoc(collection(db, 'transacoes'), {
-        nomeConta,
-        casaAposta: betHouse,
-        valorInvestido: parseFloat(valorInvestido),
-        valorGanho: parseFloat(valorGanho),
-        tipo,
-        data: data.toISOString().split('T')[0],
-        createdAt: new Date(),
+      if (!transactionDate || !accountId || !investedAmount || !earnedAmount || !status) {
+        setError('Por favor, preencha todos os campos.');
+        return;
+      }
+
+      await addDoc(collection(db, 'transactions'), {
+        uid: user.uid,
+        transactionDate: transactionDate.toDate(),
+        accountId,
+        betHouse,
+        investedAmount: parseFloat(investedAmount),
+        earnedAmount: parseFloat(earnedAmount),
+        status,
       });
 
-      if (novaCasaAposta && !casasAposta.includes(novaCasaAposta)) {
-        await addDoc(collection(db, 'betHouses'), { name: novaCasaAposta });
-        setCasasAposta([...casasAposta, novaCasaAposta]);
-      }
-
-      if (!isActive && selectedContaId) {
-        const contaRef = doc(db, 'users', selectedContaId);
-        await updateDoc(contaRef, { userStatus: 'Inativa' });
-        setContasAtivas(contasAtivas.filter(conta => conta.id !== selectedContaId));
-      }
-
-      setNomeConta('');
-      setCasaAposta('');
-      setNovaCasaAposta('');
-      setShowNovaCasaAposta(false);
-      setValorInvestido('');
-      setValorGanho('');
-      setTipo('Positivo');
-      setData(new Date());
-      setSelectedContaId(null);
-
-      alert('Transação registrada com sucesso!');
+      navigate('/transacoes');
     } catch (err) {
-      setError('Erro ao registrar transação: ' + err.message);
+      setError('Erro ao salvar transação: ' + err.message);
     }
   };
 
   return (
-    <Container>
-      <Title>Nova Transação</Title>
-      {error && <ErrorText>{error}</ErrorText>}
+    <GlobalStyle>
+      <Container>
+        <Header>
+          <Logo src={LogoSVG} alt="Bet do Fe Logo" />
+        </Header>
+        <MiddleSection>
+          <Form onSubmit={handleSubmit}>
+            <FormRow>
+              <FormField>
+                <Label>Data da Transação</Label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={transactionDate}
+                    onChange={(newValue) => setTransactionDate(newValue)}
+                    format="DD/MM/YYYY"
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    slotProps={{
+                      textField: {
+                        readOnly: true,
+                        sx: {
+                          '& .MuiInputBase-root': {
+                            backgroundColor: '#333333',
+                            color: '#CCCCCC',
+                            borderRadius: '5px',
+                            paddingRight: '30px',
+                          },
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            border: 'none',
+                          },
+                          '& .MuiInputBase-input': {
+                            padding: '8px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                          },
+                          '& .MuiSvgIcon-root': {
+                            color: '#CCCCCC',
+                          },
+                        },
+                      },
+                      popper: {
+                        sx: {
+                          zIndex: 9999,
+                        },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </FormField>
+              <FormField>
+                <Label>Conta</Label>
+                <Select value={accountId} onChange={handleAccountChange}>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.accountName}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            </FormRow>
 
-      <InputContainer>
-        <Select value={nomeConta} onChange={handleNomeContaChange}>
-          <option value="">Selecione uma Conta</option>
-          {contasAtivas.map((conta, index) => (
-            <option key={index} value={conta.userAccountName}>
-              {conta.userAccountName}
-            </option>
-          ))}
-        </Select>
-      </InputContainer>
+            <FormRow>
+              <FormField>
+                <Label>Casa de Aposta</Label>
+                <Input value={betHouse} readOnly />
+              </FormField>
+              <FormField>
+                <Label>Status</Label>
+                <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Concluída">Concluída</option>
+                  <option value="Cancelada">Cancelada</option>
+                </Select>
+              </FormField>
+            </FormRow>
 
-      <InputContainer>
-        <Select
-          value={casaAposta}
-          onChange={(e) => {
-            setCasaAposta(e.target.value);
-            setShowNovaCasaAposta(e.target.value === 'new');
-          }}
-        >
-          <option value="">Selecione uma Casa de Aposta</option>
-          {casasAposta.map((house, index) => (
-            <option key={index} value={house}>{house}</option>
-          ))}
-          <option value="new">Nova Casa de Aposta</option>
-        </Select>
-      </InputContainer>
-      {showNovaCasaAposta && (
-        <InputContainer>
-          <Input
-            placeholder="Nova Casa de Aposta"
-            value={novaCasaAposta}
-            onChange={(e) => setNovaCasaAposta(e.target.value)}
-          />
-        </InputContainer>
-      )}
+            <FormRow>
+              <FormField>
+                <Label>Valor Investido</Label>
+                <Input
+                  type="number"
+                  value={investedAmount}
+                  onChange={(e) => setInvestedAmount(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </FormField>
+              <FormField>
+                <Label>Valor Ganho</Label>
+                <Input
+                  type="number"
+                  value={earnedAmount}
+                  onChange={(e) => setEarnedAmount(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </FormField>
+            </FormRow>
 
-      <InputContainer>
-        <Input
-          type="number"
-          placeholder="Valor Investido"
-          value={valorInvestido}
-          onChange={(e) => setValorInvestido(e.target.value)}
-        />
-      </InputContainer>
+            {error && <Error>{error}</Error>}
 
-      <InputContainer>
-        <Input
-          type="number"
-          placeholder="Valor Ganho"
-          value={valorGanho}
-          onChange={(e) => setValorGanho(e.target.value)}
-        />
-      </InputContainer>
+            <ButtonRow>
+              <Button type="submit">Salvar</Button>
+              <Button type="button" onClick={() => {
+                console.log('Botão Voltar clicado, navegando para /app');
+                navigate('/app');
+              }}>
+                Voltar
+              </Button>
+            </ButtonRow>
+          </Form>
+        </MiddleSection>
 
-      <InputContainer>
-        <Select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-          <option value="Positivo">Positivo</option>
-          <option value="Negativo">Negativo</option>
-        </Select>
-      </InputContainer>
-
-      <InputContainer>
-        <StyledDatePicker
-          selected={data}
-          onChange={(date) => setData(date)}
-          dateFormat="dd/MM/yyyy"
-          placeholderText="Selecione a Data"
-          onKeyDown={(e) => e.preventDefault()}
-        />
-      </InputContainer>
-
-      <Button onClick={handleSubmit}>
-        <ButtonText>Adicionar Transação</ButtonText>
-      </Button>
-
-      <BackButton onClick={() => navigate('/app')}>
-        <ButtonText>Voltar</ButtonText>
-      </BackButton>
-
-      {showConfirmation && (
-        <ConfirmationModal>
-          <ModalContent>
-            <ModalMessage>A conta encontra-se Ativa ainda?</ModalMessage>
-            <SimButton onClick={() => handleConfirmation(true)}>Sim</SimButton>
-            <NaoButton onClick={() => handleConfirmation(false)}>Não</NaoButton>
-          </ModalContent>
-        </ConfirmationModal>
-      )}
-    </Container>
+        <Footer>
+          <FooterBackground />
+          <SocialIcons>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer">
+              <SocialIcon src={YouTubeIcon} alt="YouTube" />
+            </a>
+            <a href="https://discord.com" target="_blank" rel="noopener noreferrer">
+              <SocialIcon src={DiscordIcon} alt="Discord" />
+            </a>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+              <SocialIcon src={InstagramIcon} alt="Instagram" />
+            </a>
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+              <SocialIcon src={FacebookIcon} alt="Facebook" />
+            </a>
+            <a href="https://telegram.org" target="_blank" rel="noopener noreferrer">
+              <SocialIcon src={TelegramIcon} alt="Telegram" />
+            </a>
+          </SocialIcons>
+        </Footer>
+      </Container>
+    </GlobalStyle>
   );
 };
 

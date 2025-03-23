@@ -134,6 +134,7 @@ const Button = styled.button`
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
+  white-space: nowrap; /* Evita quebra de texto */
 
   /* Responsividade */
   @media (max-width: 768px) {
@@ -239,6 +240,11 @@ const UserScreen = () => {
               </Button>
               <Button onClick={() => navigate('/app/transacoes')}>
                 Transações
+              </Button>
+            </ButtonRow>
+            <ButtonRow>
+              <Button onClick={() => navigate('/app/consulta-contas')}>
+                Consulta de Contas
               </Button>
             </ButtonRow>
           </ButtonContainer>

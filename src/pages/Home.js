@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Adicione useNavigate
 import styled from 'styled-components';
 import { auth } from '../bettingapp/firebase/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -270,6 +270,7 @@ const SocialIcon = styled.img`
 `;
 
 const Home = () => {
+  const navigate = useNavigate(); // Adicione useNavigate
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -280,9 +281,13 @@ const Home = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
+      if (user) {
+        // Se o usuário estiver autenticado, redireciona diretamente para /app
+        navigate('/app');
+      }
     });
     return unsubscribe;
-  }, []);
+  }, [navigate]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -314,7 +319,7 @@ const Home = () => {
 
     signInWithEmailAndPassword(auth, email, password)
       .then(() => {
-        window.location.href = '/app';
+        navigate('/app'); // Redireciona para /app após login bem-sucedido
       })
       .catch((err) => setError(err.message));
   };
@@ -349,7 +354,7 @@ const Home = () => {
                   type="password"
                   placeholder="Digite sua senha"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)} // Corrigido para setPassword
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </InputContainer>
               {passwordError && <Error>{passwordError}</Error>}
